@@ -16,8 +16,16 @@ public class FlickrMiner {
 
 	public static void main(String[] args) {
 
-		if (args.length != 1) {
+		if (args.length != 1) { // Print Usage if we have the wrong number of arguments.
 			System.err.println(usage());
+			System.exit(0);
+		}
+		if (args[0].contains("flickr.com/photos/")) { // Parse profile if a URL is passed in, otherwise use as search
+														// term.
+			FlickrProfile profile = new FlickrProfile(
+					args[0].substring(args[0].indexOf("photos/") + 7, args[0].length() - 1), "");
+			profile.parseProfile();
+			profile.savePhotos();
 			System.exit(0);
 		}
 
@@ -75,6 +83,6 @@ public class FlickrMiner {
 	}
 
 	public static String usage() {
-		return "java FlickrMiner <search term>";
+		return "To parse profiles with photos under a given search term: java FlickrMiner <search term>\nTo parse profiles given a URL: java FlickrMiner <profile url>";
 	}
 }
