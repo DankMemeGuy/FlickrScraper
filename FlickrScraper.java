@@ -7,12 +7,12 @@ import java.net.URL;
 import java.util.ArrayList;
 
 /**
- * FlickrMiner
+ * FlickrScraper
  * 
  * @author Jayden Weaver
  *
  */
-public class FlickrMiner {
+public class FlickrScraper {
 
 	public static void main(String[] args) {
 
@@ -83,6 +83,6 @@ public class FlickrMiner {
 	}
 
 	public static String usage() {
-		return "To parse profiles with photos under a given search term: java FlickrMiner <search term>\nTo parse profiles given a URL: java FlickrMiner <profile url>";
+		return "To parse profiles with photos under a given search term: java FlickrScraper <search term>\nTo parse profiles given a URL: java FlickrScraper <profile url>";
 	}
 }

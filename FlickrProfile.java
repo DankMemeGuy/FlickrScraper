@@ -9,7 +9,6 @@ import java.net.URL;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
-
 /**
  * Flickr Profile
  * 
@@ -54,8 +53,9 @@ public class FlickrProfile {
 				while ((currentLine = bufRead.readLine()) != null) {
 					// Parse the image links.
 					if (currentLine.contains("view photo-list-photo-view requiredToShowOnServer photostream awake")) {
+						currentLine = bufRead.readLine();
 						currentLine = currentLine.substring(currentLine.indexOf("live.staticflickr.com"),
-								currentLine.indexOf(")\" data-view-signature"));
+								currentLine.indexOf("height="));
 						int firstUnderscoreIndex = currentLine.indexOf("_");
 						int secondUnderscoreIndex = currentLine.indexOf("_", firstUnderscoreIndex + 1);
 						String fileExtension, fileEnd;
@@ -67,6 +67,7 @@ public class FlickrProfile {
 							fileExtension = fileEnd.substring(fileEnd.indexOf("."));
 							currentLine = currentLine.replace(fileEnd, "_b" + fileExtension);
 						}
+						currentLine = currentLine.substring(0, currentLine.length() - 2);
 						addPhotoLink(currentLine);
 					}
 				}
@@ -86,7 +87,7 @@ public class FlickrProfile {
 	 */
 	public int getNumberOfPages() {
 		InputStream inStream;
-		int numberOfPages = 0;
+		int numberOfPages = 1;
 		try {
 			inStream = getProfileURL().openStream();
 			BufferedReader bufRead = new BufferedReader(new InputStreamReader(inStream));
@@ -122,17 +123,20 @@ public class FlickrProfile {
 		for (String link : this.photoLinks) {
 			try {
 				System.out.println("Attempting to save photo " + (totalCount + 1) + " of " + numberOfPhotos);
-				URL imageURL = new URL("https://" + link);
-				BufferedImage photo = ImageIO.read(imageURL);
+				BufferedImage photo = ImageIO.read(new URL("https://" + link));				
 				directory = new File("Flickr_Users\\");
 				directory.mkdir();
 				directory = new File("Flickr_Users\\" + this.username + "\\");
 				directory.mkdir();
 				String filename = link.substring(link.indexOf("/", link.indexOf("/") + 1) + 1);
 				outputFile = new File("Flickr_Users\\" + this.username + "\\" + filename);
-				ImageIO.write(photo, filename.substring(filename.indexOf(".") + 1), outputFile);
-				System.out.println("Saved: " + filename);
-				saveCount++;
+				if (ImageIO.write(photo, filename.substring(filename.indexOf(".") + 1), outputFile)) {
+					System.out.println("Saved: " + filename);	
+					saveCount++;
+				} else {
+					System.out.println("Failed to save photo: 0 | " + link);
+					failCount++;
+				}
 			} catch (MalformedURLException e) {
 				System.out.println("Failed to save photo: 1 | " + link);
 				failCount++;

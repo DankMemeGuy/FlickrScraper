@@ -21,14 +21,14 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 /**
- * FlickrMiner GUI
+ * FlickrScraper GUI
  * 
  * @author Jayden Weaver
  *
  */
-public class FlickrMinerGUI {
+public class FlickrScraperGUI {
 
-	final static double VERSION = 1.0;
+	final static double VERSION = 1.1;
 
 	public static void main(String[] args) throws IOException {
 
@@ -39,31 +39,36 @@ public class FlickrMinerGUI {
 			e.printStackTrace();
 		}
 
-		JFrame frame = new JFrame("FlickrMiner " + VERSION);
+		JFrame frame = new JFrame("FlickrScraper " + VERSION);
 		frame.setResizable(false);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		JTextField profilePath = new JTextField(50);
 		JButton scrapeButton = new JButton("Scrape User");
-
+		
 		ActionListener scrapeMonitor = new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				scrapeButton.setText("SCRAPING...");
 				scrapeButton.setForeground(Color.RED);
-
+				scrapeButton.paintImmediately(scrapeButton.getVisibleRect());
+				
 				if (profilePath.getText().equals("")) {
-					System.err.println("Cannot leave username blank!");
+					profilePath.setText("Cannot leave username blank!");
 					scrapeButton.setText("Scrape User");
 					scrapeButton.setForeground(Color.BLACK);
+					scrapeButton.paintImmediately(scrapeButton.getVisibleRect());
 					return;
 				}
 
 				System.out.println("WILL ATTEMPT TO PARSE: " + profilePath.getText());
 				FlickrProfile profile = new FlickrProfile(profilePath.getText().substring(
 						profilePath.getText().indexOf("photos/") + 7, profilePath.getText().length() - 1), "");
-				profile.parseProfile();
+				profile.parseProfile();				
 				profile.savePhotos();
+				scrapeButton.setText("Scrape User");
+				scrapeButton.setForeground(Color.BLACK);
+				scrapeButton.paintImmediately(scrapeButton.getVisibleRect());
 			}
 		};
 
@@ -84,7 +89,7 @@ public class FlickrMinerGUI {
 		JPanel aboutPanel = new JPanel();
 		JLabel author = new JLabel("@author: Jayden Weaver");
 		JLabel github = new JLabel("github.com/jayden2013");
-		JLabel year = new JLabel("2021");
+		JLabel year = new JLabel("2022");
 		JLabel versionLabel = new JLabel("Version: " + VERSION);
 		github.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
