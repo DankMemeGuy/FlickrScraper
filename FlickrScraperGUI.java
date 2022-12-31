@@ -28,7 +28,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  */
 public class FlickrScraperGUI {
 
-	final static double VERSION = 1.1;
+	final static double VERSION = 2.0;
 
 	public static void main(String[] args) throws IOException {
 
@@ -45,14 +45,14 @@ public class FlickrScraperGUI {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		JTextField profilePath = new JTextField(50);
 		JButton scrapeButton = new JButton("Scrape User");
-		
+
 		ActionListener scrapeMonitor = new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				scrapeButton.setText("SCRAPING...");
 				scrapeButton.setForeground(Color.RED);
 				scrapeButton.paintImmediately(scrapeButton.getVisibleRect());
-				
+
 				if (profilePath.getText().equals("")) {
 					profilePath.setText("Cannot leave username blank!");
 					scrapeButton.setText("Scrape User");
@@ -64,8 +64,9 @@ public class FlickrScraperGUI {
 				System.out.println("WILL ATTEMPT TO PARSE: " + profilePath.getText());
 				FlickrProfile profile = new FlickrProfile(profilePath.getText().substring(
 						profilePath.getText().indexOf("photos/") + 7, profilePath.getText().length() - 1), "");
-				profile.parseProfile();				
+				profile.parseProfile();
 				profile.savePhotos();
+				profile.saveVideos();
 				scrapeButton.setText("Scrape User");
 				scrapeButton.setForeground(Color.BLACK);
 				scrapeButton.paintImmediately(scrapeButton.getVisibleRect());

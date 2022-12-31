@@ -73,6 +73,7 @@ public class FlickrScraper {
 			for (FlickrProfile profile : flickrProfiles) {
 				profile.parseProfile();
 				profile.savePhotos();
+				profile.saveVideos();
 			}
 
 		} catch (MalformedURLException e) {

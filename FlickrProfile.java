@@ -1,6 +1,8 @@
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -9,6 +11,7 @@ import java.net.URL;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
+
 /**
  * Flickr Profile
  * 
@@ -22,6 +25,7 @@ public class FlickrProfile {
 	private String flickrPath = "https://www.flickr.com/photos/";
 	private String aboutPath = "https://www.flickr.com/people/";
 	ArrayList<String> photoLinks = new ArrayList<String>();
+	ArrayList<String> videoLinks = new ArrayList<String>();
 
 	public FlickrProfile(String pathAlias, String username) {
 		this.pathAlias = pathAlias;
@@ -51,8 +55,25 @@ public class FlickrProfile {
 				bufRead = new BufferedReader(new InputStreamReader(inStream));
 
 				while ((currentLine = bufRead.readLine()) != null) {
-					// Parse the image links.
-					if (currentLine.contains("view photo-list-photo-view requiredToShowOnServer photostream awake")) {
+					// Parse the image and video links.
+					if (currentLine
+							.contains("view photo-list-photo-view requiredToShowOnServer photostream awake is-video")) {
+						currentLine = bufRead.readLine();
+						currentLine = currentLine.substring(currentLine.indexOf(".com/") + 5, currentLine.indexOf("_"));
+						currentLine = currentLine.substring(currentLine.indexOf("/") + 1);
+						InputStream videoInStream = new URL("https://embedr.flickr.com/photos/" + currentLine)
+								.openStream();
+						BufferedReader videoBufReader = new BufferedReader(new InputStreamReader(videoInStream));
+						while ((currentLine = videoBufReader.readLine()) != null) {
+							if (currentLine.contains("<video src=\"")) {
+								currentLine = currentLine.substring(currentLine.indexOf("<video src=\"") + 12,
+										currentLine.indexOf("\" width"));
+								videoLinks.add(currentLine);
+								break;
+							}
+						}
+					} else if (currentLine
+							.contains("view photo-list-photo-view requiredToShowOnServer photostream awake")) {
 						currentLine = bufRead.readLine();
 						currentLine = currentLine.substring(currentLine.indexOf("live.staticflickr.com"),
 								currentLine.indexOf("height="));
@@ -69,6 +90,28 @@ public class FlickrProfile {
 						}
 						currentLine = currentLine.substring(0, currentLine.length() - 2);
 						addPhotoLink(currentLine);
+					} else if (getUsername().equals("")) {
+						if (currentLine.contains("person-models")) {
+							// get username from profile if username is empty. this is for the GUI.
+							try {
+								setUsername(currentLine.substring(currentLine.indexOf("\"username\":\"") + 12,
+										currentLine.indexOf(",\"realname") - 1));
+							} catch (StringIndexOutOfBoundsException e) {
+								// sometimes a profile does not have a real name so the next element is a buddy
+								// icon.
+								setUsername(currentLine.substring(currentLine.indexOf("\"username\":\"") + 12,
+										currentLine.indexOf(",\"buddyicon") - 1));
+							}
+							setUsername(getUsername().replaceAll("%20", " "));
+							// set path alias
+							setPathAlias(currentLine.substring(currentLine.indexOf("pathAlias\":\"") + 12,
+									currentLine.indexOf("\",\"owner\":{\"data\":{\"_flickrModelRegistry\":")));
+							// if for some reason we get junk, just set it to the username
+							if (getPathAlias().contains("{") || getPathAlias().contains("\"")
+									|| getPathAlias().contains("[")) {
+								setPathAlias(getUsername());
+							}
+						}
 					}
 				}
 				bufRead.close();
@@ -123,7 +166,7 @@ public class FlickrProfile {
 		for (String link : this.photoLinks) {
 			try {
 				System.out.println("Attempting to save photo " + (totalCount + 1) + " of " + numberOfPhotos);
-				BufferedImage photo = ImageIO.read(new URL("https://" + link));				
+				BufferedImage photo = ImageIO.read(new URL("https://" + link));
 				directory = new File("Flickr_Users\\");
 				directory.mkdir();
 				directory = new File("Flickr_Users\\" + this.username + "\\");
@@ -131,7 +174,7 @@ public class FlickrProfile {
 				String filename = link.substring(link.indexOf("/", link.indexOf("/") + 1) + 1);
 				outputFile = new File("Flickr_Users\\" + this.username + "\\" + filename);
 				if (ImageIO.write(photo, filename.substring(filename.indexOf(".") + 1), outputFile)) {
-					System.out.println("Saved: " + filename);	
+					System.out.println("Saved: " + filename);
 					saveCount++;
 				} else {
 					System.out.println("Failed to save photo: 0 | " + link);
@@ -150,13 +193,58 @@ public class FlickrProfile {
 		return saveCount == totalCount;
 	}
 
+	/**
+	 * Saves videos to Flickr_Users.
+	 * 
+	 * @return true if all videos are saved.
+	 */
+	public boolean saveVideos() {
+		int i = 0, saveCount = 0, failCount = 0, totalCount = videoLinks.size();
+		for (String video : videoLinks) {
+			i++;
+			try {
+				System.out.println("Attempting to save video " + i + " of " + videoLinks.size());
+				File directory = new File("Flickr_Users\\");
+				directory.mkdir();
+				directory = new File("Flickr_Users\\" + this.username + "\\");
+				directory.mkdir();
+				BufferedInputStream bufferedInputStream = new BufferedInputStream(new URL(video).openStream());
+				FileOutputStream fileOutputStream;
+				String videoFileName = System.currentTimeMillis() + ".mp4";
+				fileOutputStream = new FileOutputStream("Flickr_Users\\" + this.username + "\\" + videoFileName);
+				int count = 0;
+				byte[] b = new byte[100];
+				while ((count = bufferedInputStream.read(b)) != -1) {
+					fileOutputStream.write(b, 0, count);
+				}
+				fileOutputStream.close();
+				System.out.println("Saved: " + videoFileName);
+				saveCount++;
+			} catch (IOException e) {
+				System.out.println("Failed to save video " + i + " of " + videoLinks.size());
+				failCount++;
+			}
+		}
+		System.out.println("Saved " + saveCount + " videos." + " Failed to save " + failCount + " videos.");
+		return saveCount == totalCount;
+	}
+
 	public ArrayList<String> getPhotoLinks() {
 		return this.photoLinks;
 	}
 
 	public boolean addPhotoLink(String link) {
 		this.photoLinks.add(link);
-		return !photoLinks.isEmpty();
+		return !photoLinks.contains(link);
+	}
+
+	public ArrayList<String> getVideoLinks() {
+		return this.videoLinks;
+	}
+
+	public boolean addVideoLink(String link) {
+		this.videoLinks.add(link);
+		return !videoLinks.contains(link);
 	}
 
 	public boolean setUsername(String username) {
